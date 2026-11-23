@@ -82,6 +82,13 @@ def init_presence(app):
                 "user": user.to_dict()
             }, room=sid)
 
+            # If user has an active incoming call ringing while their app was closed, deliver it immediately
+            try:
+                from backend.sockets.signaling import check_pending_incoming_call
+                check_pending_incoming_call(sid, user_id)
+            except Exception as e:
+                app.logger.warning(f"Error checking pending incoming call: {e}")
+
     @socketio.on("disconnect")
     def handle_disconnect(*args, **kwargs):
         sid = request.sid

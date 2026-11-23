@@ -150,7 +150,7 @@ class SoundManager {
   }
 
   /**
-   * Real-Time Voice Waveform Visualizer
+   * Real-Time Voice Waveform Visualizer with Organic Breathing State
    */
   startWaveformVisualizer(stream, canvas) {
     if (!canvas) return;
@@ -165,38 +165,60 @@ class SoundManager {
     const bufferLength = this.analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     const canvasCtx = canvas.getContext("2d");
+    let idlePhase = 0;
 
     const render = () => {
       this.visualizerAnimationId = requestAnimationFrame(render);
       this.analyser.getByteFrequencyData(dataArray);
 
+      let activitySum = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        activitySum += dataArray[i];
+      }
+      const isQuiet = activitySum < 15;
+
       canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const barWidth = (canvas.width / bufferLength) * 1.5;
-      let x = 0;
+      const numBars = 22;
+      const barWidth = 6;
+      const spacing = 8;
+      const totalWidth = numBars * (barWidth + spacing) - spacing;
+      const startX = (canvas.width - totalWidth) / 2;
+      const centerY = canvas.height / 2;
 
-      for (let i = 0; i < bufferLength; i++) {
-        const val = dataArray[i];
-        const barHeight = Math.max(4, (val / 255) * canvas.height * 0.85);
+      idlePhase += 0.04;
 
-        // Pink gradient bars
-        const gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
+      for (let i = 0; i < numBars; i++) {
+        let val = 0;
+        if (isQuiet) {
+          // Gentle organic sine wave when silent
+          val = Math.sin(idlePhase + i * 0.35) * 16 + 20;
+        } else {
+          const sampleIndex = Math.floor((i / numBars) * bufferLength);
+          val = dataArray[sampleIndex] || 0;
+        }
+
+        const barHeight = Math.max(8, (val / 255) * canvas.height * 0.82);
+        const x = startX + i * (barWidth + spacing);
+        const y = centerY - barHeight / 2;
+
+        // Vivid Pink to Purple Neon Gradient
+        const gradient = canvasCtx.createLinearGradient(0, y, 0, y + barHeight);
         gradient.addColorStop(0, "#FF4F9A");
-        gradient.addColorStop(1, "#F72585");
+        gradient.addColorStop(0.5, "#F72585");
+        gradient.addColorStop(1, "#7928CA");
 
         canvasCtx.fillStyle = gradient;
-        // Rounded bar
-        canvasCtx.beginPath();
-        canvasCtx.roundRect(
-          x,
-          (canvas.height - barHeight) / 2,
-          barWidth - 3,
-          barHeight,
-          4
-        );
-        canvasCtx.fill();
+        canvasCtx.shadowBlur = 8;
+        canvasCtx.shadowColor = "rgba(255, 79, 154, 0.4)";
 
-        x += barWidth;
+        canvasCtx.beginPath();
+        if (canvasCtx.roundRect) {
+          canvasCtx.roundRect(x, y, barWidth, barHeight, 3);
+        } else {
+          canvasCtx.rect(x, y, barWidth, barHeight);
+        }
+        canvasCtx.fill();
       }
     };
 

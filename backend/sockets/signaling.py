@@ -8,6 +8,8 @@ from backend.sockets.presence import get_user_sockets, get_socket_user, emit_to_
 from backend.database import db
 from backend.models.user import User
 from backend.models.call_log import CallLog
+from backend.models.push_subscription import PushSubscription
+from backend.services.push_service import send_call_push_alert, send_call_cancelled_alert
 
 # Active call tracking
 calls_lock = threading.Lock()
@@ -17,6 +19,29 @@ active_calls = {}
 user_active_calls = {}
 
 CALL_TIMEOUT_SECONDS = 30
+
+def check_pending_incoming_call(sid, user_id):
+    """
+    Checks if a newly connected socket has an active incoming call ringing for them,
+    and immediately sends the incoming-call event.
+    """
+    with calls_lock:
+        call_id = user_active_calls.get(user_id)
+        if not call_id:
+            return
+        call = active_calls.get(call_id)
+        if not call or call.get("receiver_id") != user_id or call.get("status") != "ringing":
+            return
+        caller_id = call.get("caller_id")
+        call_type = call.get("call_type")
+
+    caller_user = db.session.get(User, caller_id)
+    if caller_user:
+        socketio.emit("incoming-call", {
+            "callId": call_id,
+            "callType": call_type,
+            "caller": caller_user.to_dict()
+        }, room=sid)
 
 def init_signaling(app):
     def handle_call_timeout(call_id):
@@ -43,6 +68,7 @@ def init_signaling(app):
             "callId": call_id,
             "message": "Missed call."
         })
+        send_call_cancelled_alert(app, receiver_id, call_id)
 
         # Save to database as missed call
         with app.app_context():
@@ -95,8 +121,10 @@ def init_signaling(app):
                 return
 
             receiver_sids = get_user_sockets(to_user_id)
-            if not receiver_sids:
-                # Target is offline - record missed call immediately
+            has_push = PushSubscription.query.filter_by(user_id=to_user_id).first() is not None
+
+            if not receiver_sids and not has_push:
+                # Target is offline and has no push subscription - record missed call immediately
                 log = CallLog(
                     caller_id=caller_id,
                     receiver_id=to_user_id,
@@ -161,6 +189,8 @@ def init_signaling(app):
                 "callType": call_type,
                 "caller": caller_user.to_dict()
             })
+            # Send background push notification with phone ringing vibration
+            send_call_push_alert(app, to_user_id, caller_user.to_dict(), call_type, call_id)
 
     @socketio.on("accept-call")
     def handle_accept_call(data):
@@ -201,6 +231,7 @@ def init_signaling(app):
             "callId": call_id,
             "callType": call_type
         })
+        send_call_cancelled_alert(app, user_id, call_id)
 
     @socketio.on("reject-call")
     def handle_reject_call(data):
@@ -236,6 +267,7 @@ def init_signaling(app):
             "callId": call_id,
             "message": "Call declined."
         })
+        send_call_cancelled_alert(app, receiver_id, call_id)
 
         with app.app_context():
             try:
@@ -287,6 +319,7 @@ def init_signaling(app):
             "callId": call_id,
             "message": "Call was cancelled by caller."
         })
+        send_call_cancelled_alert(app, receiver_id, call_id)
 
         with app.app_context():
             try:

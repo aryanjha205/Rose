@@ -34,6 +34,17 @@ class Config:
     
     # CORS
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
+
+    # Web Push VAPID Configuration for Background Calling & Ringing
+    VAPID_PUBLIC_KEY = os.environ.get(
+        "VAPID_PUBLIC_KEY",
+        "BAysyz4WCobFhHKcfSTuBr3WUjnmdL3eq0lN2_COQJgWAs4UbUXSG1Mx6eplHekIAHxkELbmxKKrEy6zA_jvx1I"
+    )
+    VAPID_PRIVATE_KEY_PEM = os.environ.get(
+        "VAPID_PRIVATE_KEY_PEM",
+        "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgtp72799nYQLIcwvC\nMHMe3EXUnWHnbfdza29tkTmmscuhRANCAAQMrMs+FgqGxYRynH0k7ga91lI55nS9\n3qtJTdvwjkCYFgLOFG1F0htTMenqZR3pCAB8ZBC25sSiqxMuswP478dS\n-----END PRIVATE KEY-----"
+    )
+    VAPID_CLAIMS_EMAIL = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:support@rose-juih.onrender.com")
     
     # STUN/TURN configuration
     ICE_SERVERS = [

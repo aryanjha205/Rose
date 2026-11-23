@@ -2,7 +2,15 @@
  * WebCall Application Bootstrap & Event Controller
  */
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("WebCall Initializing...");
+  console.log("Rosé Initializing...");
+
+  // Capture autoAnswer parameter if opened via background push notification
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoAnswerId = urlParams.get("autoAnswer");
+  if (autoAnswerId) {
+    window.autoAnswerPendingCallId = autoAnswerId;
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  }
 
   // Initialize UI & Auth
   setupEventListeners();
@@ -21,6 +29,9 @@ function onUserAuthenticated(user) {
 
   window.ui.updateSidebarUserInfo(user);
   window.socketClient.connect();
+
+  // Initialize background push notifications for call ringing when app is closed
+  initPushNotifications();
 
   // Route to view based on URL hash or default to dashboard
   const hash = window.location.hash.replace("#", "") || "dashboard";
@@ -388,7 +399,69 @@ function setupEventListeners() {
 // =========================================================================
 // Register Service Worker for PWA Offline Support & Fast Loading
 // =========================================================================
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function initPushNotifications() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    console.log("[Push] PushManager not supported in this browser");
+    return;
+  }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let permission = Notification.permission;
+    if (permission === "default") {
+      permission = await Notification.requestPermission();
+    }
+    if (permission !== "granted") {
+      console.log("[Push] Notification permission:", permission);
+      return;
+    }
+
+    const { vapidPublicKey } = await window.api.getVapidPublicKey();
+    if (!vapidPublicKey) return;
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey
+      });
+    }
+
+    if (sub) {
+      await window.api.savePushSubscription(sub);
+      console.log("[Push] Push subscription registered and active for background ringing");
+    }
+  } catch (err) {
+    console.warn("[Push] Error initializing push notifications:", err);
+  }
+}
+
 if ("serviceWorker" in navigator) {
+  // Listen for message from service worker when user clicks 'Answer' on background push notification
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "NOTIFICATION_ANSWER_CALL") {
+      const callId = event.data.callId;
+      if (window.webrtcManager?.currentCall?.callId === callId) {
+        window.webrtcManager.acceptIncomingCall();
+      } else {
+        window.autoAnswerPendingCallId = callId;
+      }
+    }
+  });
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
       .then((registration) => {

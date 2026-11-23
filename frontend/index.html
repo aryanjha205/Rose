@@ -500,23 +500,44 @@
        ======================================================================== -->
   <div id="incoming-call-overlay" class="call-overlay">
     <div class="incoming-call-container">
-      <!-- Animated Ripples -->
-      <div class="ripple-circle"></div>
-      <div class="ripple-circle"></div>
-      <div class="ripple-circle"></div>
+      <!-- Ambient Animated Glow Orbs -->
+      <div class="call-ambient-glow orb-1"></div>
+      <div class="call-ambient-glow orb-2"></div>
+      <div class="call-ambient-glow orb-3"></div>
 
-      <img id="incoming-avatar" src="" class="caller-avatar-ring" alt="Caller">
-      <h2 id="incoming-name" class="caller-name-title">Caller Name</h2>
-      <div id="incoming-handle" class="caller-username-subtitle">@username</div>
-      <div id="incoming-type-text" class="call-type-badge-large">Incoming Call...</div>
+      <!-- Caller Profile Card with Multi-Stage Pulse Aura -->
+      <div class="call-center-content">
+        <div class="caller-avatar-wrapper">
+          <div class="ripple-circle ripple-1"></div>
+          <div class="ripple-circle ripple-2"></div>
+          <div class="ripple-circle ripple-3"></div>
+          <div class="avatar-aura-ring"></div>
+          <img id="incoming-avatar" src="" class="caller-avatar-ring" alt="Caller">
+        </div>
 
+        <h2 id="incoming-name" class="caller-name-title">Caller Name</h2>
+        <div id="incoming-handle" class="caller-username-subtitle">@username</div>
+        
+        <div class="call-status-pill">
+          <span class="pulsing-radar-dot"></span>
+          <span id="incoming-type-text">Incoming Call...</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons Row with Clear Modern Labels -->
       <div class="call-actions-row">
-        <button id="btn-reject-incoming" class="call-action-btn btn-reject-call" title="Decline Call">
-          <i class="bi bi-telephone-x-fill"></i>
-        </button>
-        <button id="btn-accept-incoming" class="call-action-btn btn-accept-call" title="Accept Call">
-          <i class="bi bi-telephone-fill"></i>
-        </button>
+        <div class="call-action-group">
+          <button id="btn-reject-incoming" class="call-action-btn btn-reject-call" title="Decline Call">
+            <i class="bi bi-telephone-x-fill"></i>
+          </button>
+          <span class="action-label">Decline</span>
+        </div>
+        <div class="call-action-group">
+          <button id="btn-accept-incoming" class="call-action-btn btn-accept-call" title="Accept Call">
+            <i class="bi bi-telephone-fill"></i>
+          </button>
+          <span class="action-label">Answer</span>
+        </div>
       </div>
     </div>
   </div>
@@ -526,18 +547,34 @@
        ======================================================================== -->
   <div id="outgoing-call-overlay" class="call-overlay">
     <div class="incoming-call-container">
-      <div class="ripple-circle"></div>
-      <div class="ripple-circle"></div>
+      <div class="call-ambient-glow orb-1"></div>
+      <div class="call-ambient-glow orb-2"></div>
+      <div class="call-ambient-glow orb-3"></div>
 
-      <img id="outgoing-avatar" src="" class="caller-avatar-ring" alt="Receiver">
-      <h2 id="outgoing-name" class="caller-name-title">Receiver Name</h2>
-      <div id="outgoing-handle" class="caller-username-subtitle">@username</div>
-      <div id="outgoing-type-text" class="call-type-badge-large">Calling...</div>
+      <div class="call-center-content">
+        <div class="caller-avatar-wrapper">
+          <div class="ripple-circle ripple-1"></div>
+          <div class="ripple-circle ripple-2"></div>
+          <div class="avatar-aura-ring"></div>
+          <img id="outgoing-avatar" src="" class="caller-avatar-ring" alt="Receiver">
+        </div>
+
+        <h2 id="outgoing-name" class="caller-name-title">Receiver Name</h2>
+        <div id="outgoing-handle" class="caller-username-subtitle">@username</div>
+        
+        <div class="call-status-pill">
+          <span class="pulsing-radar-dot"></span>
+          <span id="outgoing-type-text">Calling...</span>
+        </div>
+      </div>
 
       <div class="call-actions-row">
-        <button id="btn-cancel-outgoing" class="call-action-btn btn-reject-call" title="Cancel Call">
-          <i class="bi bi-telephone-x-fill"></i>
-        </button>
+        <div class="call-action-group">
+          <button id="btn-cancel-outgoing" class="call-action-btn btn-reject-call" title="Cancel Call">
+            <i class="bi bi-telephone-x-fill"></i>
+          </button>
+          <span class="action-label">Cancel</span>
+        </div>
       </div>
     </div>
   </div>
@@ -547,16 +584,29 @@
        ======================================================================== -->
   <div id="active-voice-overlay" class="call-overlay">
     <div class="voice-call-container">
-      <div class="voice-header">
-        <div class="brand-badge mb-3">
-          <i class="bi bi-telephone-fill"></i> Voice Call
+      <div class="call-ambient-glow orb-1"></div>
+      <div class="call-ambient-glow orb-2"></div>
+
+      <!-- Top Security / Info Bar -->
+      <div class="voice-call-topbar">
+        <div class="call-crypto-pill">
+          <i class="bi bi-shield-check"></i> End-to-End Encrypted
         </div>
-        <div class="avatar-container mb-3">
-          <img id="voice-peer-avatar" src="" class="caller-avatar-ring" style="width: 130px; height: 130px;" alt="Peer">
+      </div>
+
+      <!-- Center Avatar & Info -->
+      <div class="voice-center-stage">
+        <div class="voice-avatar-frame">
+          <div class="voice-ambient-wave"></div>
+          <img id="voice-peer-avatar" src="" class="voice-peer-avatar" alt="Peer">
         </div>
-        <h3 id="voice-peer-name" class="fw-bold mb-1">Peer Name</h3>
-        <div id="voice-peer-handle" class="text-secondary small mb-2">@username</div>
-        <div id="voice-call-timer" class="voice-call-timer">00:00</div>
+        <h3 id="voice-peer-name" class="voice-peer-name">Peer Name</h3>
+        <div id="voice-peer-handle" class="voice-peer-handle">@username</div>
+        
+        <div class="voice-timer-pill">
+          <span class="live-pulse-dot"></span>
+          <span id="voice-call-timer">00:00</span>
+        </div>
       </div>
 
       <!-- Real-Time Waveform Visualizer Canvas -->
@@ -564,14 +614,18 @@
         <canvas id="voice-waveform-canvas" width="480" height="120"></canvas>
       </div>
 
-      <!-- Voice Call Controls -->
-      <div class="call-controls-bar">
-        <button class="control-btn btn-toggle-mic" title="Mute/Unmute Mic">
-          <i class="bi bi-mic-fill"></i>
-        </button>
-        <button class="control-btn btn-end-call" title="End Call">
-          <i class="bi bi-telephone-x-fill"></i>
-        </button>
+      <!-- Floating Glass Controls Bar -->
+      <div class="call-dock-container">
+        <div class="call-controls-bar">
+          <button class="control-btn btn-toggle-mic" title="Mute/Unmute Mic">
+            <i class="bi bi-mic-fill"></i>
+            <span class="ctrl-subtext">Mic</span>
+          </button>
+          <button class="control-btn btn-end-call" title="End Call">
+            <i class="bi bi-telephone-x-fill"></i>
+            <span class="ctrl-subtext">End</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -586,14 +640,19 @@
         <video id="remote-video" autoplay playsinline></video>
         <!-- Fallback avatar when remote camera disabled -->
         <div id="remote-video-placeholder" class="remote-video-placeholder">
-          <i class="bi bi-camera-video-off display-3 text-muted mb-3"></i>
-          <h5>Camera Turned Off</h5>
+          <div class="placeholder-avatar-ring">
+            <i class="bi bi-camera-video-off display-4 mb-2"></i>
+          </div>
+          <h5 class="fw-bold text-white mb-1">Camera Turned Off</h5>
+          <span class="text-white-50 small">Remote participant disabled video</span>
         </div>
+        <div class="video-cinematic-vignette"></div>
       </div>
 
       <!-- Local Camera Preview (Picture-in-Picture) -->
       <div class="local-pip-wrapper">
         <video id="local-video" autoplay playsinline muted></video>
+        <div class="pip-glass-frame"></div>
         <div class="pip-controls">
           <button class="pip-btn btn-flip-cam" title="Flip Camera">
             <i class="bi bi-arrow-repeat"></i>
@@ -607,13 +666,19 @@
           <img id="video-peer-avatar" src="" class="video-peer-avatar" alt="Peer">
           <div class="video-peer-text">
             <div id="video-peer-name" class="video-peer-name">Peer Name</div>
-            <div id="video-call-timer" class="video-call-duration">00:00</div>
+            <div class="video-meta-row">
+              <span class="live-pulse-dot"></span>
+              <span id="video-call-timer" class="video-call-duration">00:00</span>
+              <span class="video-quality-tag">HD</span>
+            </div>
           </div>
         </div>
 
-        <button class="btn btn-dark btn-sm rounded-pill px-3 btn-fullscreen" title="Toggle Fullscreen">
-          <i class="bi bi-arrows-fullscreen"></i>
-        </button>
+        <div class="video-top-actions">
+          <button class="video-glass-btn btn-fullscreen" title="Toggle Fullscreen">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Bottom Floating Controls Bar -->
@@ -621,18 +686,22 @@
         <div class="call-controls-bar">
           <button class="control-btn btn-toggle-mic" title="Toggle Microphone">
             <i class="bi bi-mic-fill"></i>
+            <span class="ctrl-subtext">Mic</span>
           </button>
 
           <button class="control-btn btn-toggle-cam" title="Toggle Camera">
             <i class="bi bi-camera-video-fill"></i>
+            <span class="ctrl-subtext">Cam</span>
           </button>
 
           <button class="control-btn btn-flip-cam" title="Flip Camera">
             <i class="bi bi-arrow-repeat"></i>
+            <span class="ctrl-subtext">Flip</span>
           </button>
 
           <button class="control-btn btn-end-call" title="End Call">
             <i class="bi bi-telephone-x-fill"></i>
+            <span class="ctrl-subtext">End</span>
           </button>
         </div>
       </div>

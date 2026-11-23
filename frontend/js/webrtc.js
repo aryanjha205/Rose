@@ -235,6 +235,14 @@ class WebRTCManager {
 
     window.soundManager.playIncomingRingtone();
     window.ui.showIncomingCallScreen(data.caller, data.callType);
+
+    // If call was opened from a background ringing notification (auto-answer)
+    if (window.autoAnswerPendingCallId === data.callId) {
+      window.autoAnswerPendingCallId = null;
+      setTimeout(() => {
+        this.acceptIncomingCall();
+      }, 400);
+    }
   }
 
   async acceptIncomingCall() {

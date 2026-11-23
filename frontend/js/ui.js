@@ -585,12 +585,15 @@ class UIManager {
   updateMicButtonState(isMuted) {
     document.querySelectorAll(".btn-toggle-mic").forEach(btn => {
       const icon = btn.querySelector("i");
+      const sub = btn.querySelector(".ctrl-subtext");
       if (isMuted) {
         btn.classList.add("btn-muted-state");
         if (icon) icon.className = "bi bi-mic-mute-fill";
+        if (sub) sub.textContent = "Muted";
       } else {
         btn.classList.remove("btn-muted-state");
         if (icon) icon.className = "bi bi-mic-fill";
+        if (sub) sub.textContent = "Mic";
       }
     });
   }
@@ -598,12 +601,15 @@ class UIManager {
   updateCameraButtonState(isCameraOff) {
     document.querySelectorAll(".btn-toggle-cam").forEach(btn => {
       const icon = btn.querySelector("i");
+      const sub = btn.querySelector(".ctrl-subtext");
       if (isCameraOff) {
         btn.classList.add("btn-muted-state");
         if (icon) icon.className = "bi bi-camera-video-off-fill";
+        if (sub) sub.textContent = "Off";
       } else {
         btn.classList.remove("btn-muted-state");
         if (icon) icon.className = "bi bi-camera-video-fill";
+        if (sub) sub.textContent = "Cam";
       }
     });
 

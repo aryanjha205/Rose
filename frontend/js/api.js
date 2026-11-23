@@ -166,6 +166,22 @@ class ApiClient {
       return window.CONFIG.ICE_SERVERS;
     }
   }
+
+  // Web Push Notifications
+  async getVapidPublicKey() {
+    return this.request("/api/config/vapid-key");
+  }
+
+  async savePushSubscription(subscription) {
+    const subJson = subscription.toJSON ? subscription.toJSON() : subscription;
+    return this.request("/api/users/push-subscription", {
+      method: "POST",
+      body: JSON.stringify({
+        endpoint: subJson.endpoint,
+        keys: subJson.keys
+      })
+    });
+  }
 }
 
 window.api = new ApiClient();

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from backend.database import db
 from backend.models.user import User
 from backend.models.contact import Contact
+from backend.models.push_subscription import PushSubscription
 from backend.services.auth_service import token_required
 from backend.services.cloudinary_service import upload_avatar
 
@@ -126,3 +127,32 @@ def update_password(current_user):
         "success": True,
         "message": "Password updated successfully."
     }), 200
+
+@users_bp.route("/push-subscription", methods=["POST"])
+@token_required
+def save_push_subscription(current_user):
+    data = request.get_json() or {}
+    endpoint = data.get("endpoint")
+    keys = data.get("keys", {})
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+
+    if not endpoint or not p256dh or not auth:
+        return jsonify({"success": False, "message": "Invalid subscription payload."}), 400
+
+    existing = PushSubscription.query.filter_by(endpoint=endpoint).first()
+    if existing:
+        existing.user_id = current_user.id
+        existing.p256dh = p256dh
+        existing.auth = auth
+    else:
+        new_sub = PushSubscription(
+            user_id=current_user.id,
+            endpoint=endpoint,
+            p256dh=p256dh,
+            auth=auth
+        )
+        db.session.add(new_sub)
+
+    db.session.commit()
+    return jsonify({"success": True, "message": "Push subscription saved successfully."}), 200

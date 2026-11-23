@@ -1,7 +1,8 @@
 /**
- * WebCall Service Worker (PWA)
+ * Rosé Service Worker (PWA)
+ * Supports Offline Shell caching, Background Web Push Calls, Ring Vibration, and Immediate Notification Actions.
  */
-const CACHE_NAME = "rose-cache-v2";
+const CACHE_NAME = "rose-cache-v4";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -37,7 +38,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate Event: purge stale caches
+// Activate Event: purge stale caches and claim clients immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -88,6 +89,95 @@ self.addEventListener("fetch", (event) => {
         });
 
       return cachedResponse || fetchPromise;
+    })
+  );
+});
+
+// =========================================================================
+// Web Push API: Incoming Background Call Notification & Phone Ringing
+// =========================================================================
+self.addEventListener("push", (event) => {
+  console.log("[PWA ServiceWorker] Push notification received", event);
+  if (!event.data) return;
+
+  let payload = {};
+  try {
+    payload = event.data.json();
+  } catch (e) {
+    payload = { type: "message", text: event.data.text() };
+  }
+
+  if (payload.type === "incoming-call") {
+    const caller = payload.caller || {};
+    const callerName = caller.display_name || (caller.username ? `@${caller.username}` : "Rosé User");
+    const callType = payload.callType === "video" ? "📹 Video Call" : "📞 Voice Call";
+    const callId = payload.callId;
+
+    const title = `📞 ${callerName} is calling...`;
+    const options = {
+      body: `Incoming ${callType} from ${callerName}. Tap to answer!`,
+      icon: caller.avatar_url || "/icons/icon-192.png",
+      badge: "/icons/favicon-32.png",
+      tag: `call-${callId}`,
+      renotify: true,
+      requireInteraction: true,
+      silent: false,
+      // Continuous ringing vibration pattern: 600ms vibrate, 300ms pause
+      vibrate: [600, 300, 600, 300, 600, 300, 600, 300, 600, 300, 600, 300, 600, 300],
+      data: {
+        url: `/?autoAnswer=${encodeURIComponent(callId || "")}`,
+        callId: callId,
+        caller: caller,
+        callType: payload.callType
+      },
+      actions: [
+        { action: "answer", title: "📞 Answer" },
+        { action: "decline", title: "❌ Decline" }
+      ]
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(title, options)
+    );
+  } else if (payload.type === "call-cancelled") {
+    const callId = payload.callId;
+    event.waitUntil(
+      self.registration.getNotifications().then((notifications) => {
+        notifications.forEach((notification) => {
+          if (notification.tag === `call-${callId}` || notification.data?.callId === callId) {
+            notification.close();
+          }
+        });
+      })
+    );
+  }
+});
+
+// Notification Click Event: Focus open tab or launch app to answer call
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const data = event.notification.data || {};
+  const action = event.action;
+  const callId = data.callId;
+
+  if (action === "decline") {
+    console.log("[PWA ServiceWorker] Incoming call declined via notification action");
+    return;
+  }
+
+  const targetUrl = `/?autoAnswer=${encodeURIComponent(callId || "")}`;
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if ("focus" in client) {
+          client.postMessage({ type: "NOTIFICATION_ANSWER_CALL", callId: callId });
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });

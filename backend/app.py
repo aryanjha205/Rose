@@ -66,6 +66,13 @@ def create_app(config_class=Config, config_override=None):
             "iceServers": app.config.get("ICE_SERVERS", [])
         }), 200
 
+    # VAPID Public Key for Web Push Notifications & Background Ringing
+    @app.route("/api/config/vapid-key", methods=["GET"])
+    def get_vapid_key():
+        return jsonify({
+            "vapidPublicKey": app.config.get("VAPID_PUBLIC_KEY")
+        }), 200
+
     # Serve frontend SPA
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
@@ -73,6 +80,13 @@ def create_app(config_class=Config, config_override=None):
         if path != "" and os.path.exists(os.path.join(frontend_dir, path)):
             return send_from_directory(frontend_dir, path)
         return send_from_directory(frontend_dir, "index.html")
+
+    # Auto-create tables (e.g. push_subscriptions) if not existing
+    with app.app_context():
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.warning(f"Database auto-table creation warning: {e}")
 
     return app
 
