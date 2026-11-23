@@ -123,20 +123,45 @@ class ApiClient {
     });
   }
 
-  // Contacts endpoints
+  // Contacts & Requests endpoints
   async getContacts() {
     return this.request("/api/contacts");
   }
 
-  async addContact(contactUserId, username, nickname) {
-    return this.request("/api/contacts", {
+  async getContactRequests() {
+    return this.request("/api/contacts/requests");
+  }
+
+  async sendContactRequest(contactUserId, username) {
+    return this.request("/api/contacts/requests", {
       method: "POST",
       body: JSON.stringify({
         contact_user_id: contactUserId,
-        username,
-        nickname
+        username
       })
     });
+  }
+
+  async acceptContactRequest(requestId) {
+    return this.request(`/api/contacts/requests/${requestId}/accept`, {
+      method: "POST"
+    });
+  }
+
+  async declineContactRequest(requestId) {
+    return this.request(`/api/contacts/requests/${requestId}/decline`, {
+      method: "POST"
+    });
+  }
+
+  async cancelContactRequest(requestId) {
+    return this.request(`/api/contacts/requests/${requestId}`, {
+      method: "DELETE"
+    });
+  }
+
+  async addContact(contactUserId, username, nickname) {
+    return this.sendContactRequest(contactUserId, username);
   }
 
   async removeContact(contactUserId) {

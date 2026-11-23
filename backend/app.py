@@ -85,7 +85,10 @@ def create_app(config_class=Config, config_override=None):
     with app.app_context():
         try:
             db.create_all()
+            db.session.execute(db.text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"))
+            db.session.commit()
         except Exception as e:
+            db.session.rollback()
             app.logger.warning(f"Database auto-table creation warning: {e}")
 
     return app

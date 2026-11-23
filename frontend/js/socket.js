@@ -61,6 +61,24 @@ class SocketClient {
       window.dispatchEvent(new CustomEvent("webcall:user-status", { detail: data }));
     });
 
+    // Real-Time Contact Request Notification
+    this.socket.on("contact-request-received", (data) => {
+      console.log("Contact request received:", data);
+      const sender = data.request?.sender;
+      window.ui.showToast(`🌸 @${sender?.username || 'A user'} sent you a contact request!`, "info");
+      window.ui.loadContacts();
+    });
+
+    this.socket.on("contact-request-accepted", (data) => {
+      console.log("Contact request accepted:", data);
+      const user = data.user;
+      window.ui.showToast(`✨ @${user?.username || 'A user'} approved your contact request! You can now call each other.`, "success");
+      window.ui.loadContacts();
+      if (window.ui.currentView === "search") {
+        window.ui.loadSearch();
+      }
+    });
+
     // Incoming Call from peer
     this.socket.on("incoming-call", (data) => {
       console.log("Incoming call:", data);

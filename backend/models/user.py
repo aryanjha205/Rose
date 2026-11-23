@@ -10,7 +10,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     display_name = db.Column(db.String(64), nullable=False)
-    avatar_url = db.Column(db.String(512), nullable=True)
+    avatar_url = db.Column(db.Text, nullable=True)
     bio = db.Column(db.String(255), default="Hey there! I am using WebCall.")
     is_online = db.Column(db.Boolean, default=False)
     last_seen = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

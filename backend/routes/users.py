@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from backend.database import db
 from backend.models.user import User
 from backend.models.contact import Contact
+from backend.models.contact_request import ContactRequest
 from backend.models.push_subscription import PushSubscription
 from backend.services.auth_service import token_required
 from backend.services.cloudinary_service import upload_avatar
@@ -14,23 +15,36 @@ def search_users(current_user):
     query = (request.args.get("q") or "").strip().lower()
     if not query:
         # Return suggested users
-        users = User.query.filter(User.id != current_user.id).limit(10).all()
+        users = User.query.filter(User.id != current_user.id).limit(15).all()
     else:
         search_filter = f"%{query}%"
         users = User.query.filter(
             User.id != current_user.id,
             (User.username.ilike(search_filter) | User.display_name.ilike(search_filter))
-        ).limit(20).all()
+        ).limit(25).all()
 
     # Get contact IDs for current user to mark 'is_contact'
     user_contact_ids = {
         c.contact_user_id for c in Contact.query.filter_by(user_id=current_user.id).all()
     }
 
+    # Get pending sent requests
+    sent_requests = {
+        r.receiver_id: r.id for r in ContactRequest.query.filter_by(sender_id=current_user.id, status="pending").all()
+    }
+
+    # Get pending received requests
+    received_requests = {
+        r.sender_id: r.id for r in ContactRequest.query.filter_by(receiver_id=current_user.id, status="pending").all()
+    }
+
     results = []
     for u in users:
         u_dict = u.to_dict()
         u_dict["is_contact"] = u.id in user_contact_ids
+        u_dict["has_sent_request"] = u.id in sent_requests
+        u_dict["has_received_request"] = u.id in received_requests
+        u_dict["pending_request_id"] = sent_requests.get(u.id) or received_requests.get(u.id)
         results.append(u_dict)
 
     return jsonify({
@@ -50,8 +64,19 @@ def get_user_profile(current_user, username):
         user_id=current_user.id, contact_user_id=target.id
     ).first() is not None
 
+    sent_req = ContactRequest.query.filter_by(
+        sender_id=current_user.id, receiver_id=target.id, status="pending"
+    ).first()
+
+    received_req = ContactRequest.query.filter_by(
+        sender_id=target.id, receiver_id=current_user.id, status="pending"
+    ).first()
+
     u_dict = target.to_dict()
     u_dict["is_contact"] = is_contact
+    u_dict["has_sent_request"] = sent_req is not None
+    u_dict["has_received_request"] = received_req is not None
+    u_dict["pending_request_id"] = sent_req.id if sent_req else (received_req.id if received_req else None)
     u_dict["is_self"] = target.id == current_user.id
 
     return jsonify({
@@ -102,7 +127,7 @@ def upload_user_avatar(current_user):
 
     return jsonify({
         "success": True,
-        "message": "Avatar uploaded to Cloudinary successfully.",
+        "message": "Avatar updated successfully.",
         "avatar_url": avatar_url,
         "user": current_user.to_dict(include_private=True)
     }), 200

@@ -24,8 +24,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function onUserAuthenticated(user) {
-  document.getElementById("auth-wrapper").style.display = "none";
-  document.getElementById("app-layout").style.display = "flex";
+  document.body.classList.remove("not-authenticated");
+  document.body.classList.add("authenticated");
+
+  const authWrapper = document.getElementById("auth-wrapper");
+  const appLayout = document.getElementById("app-layout");
+  if (authWrapper) authWrapper.style.setProperty("display", "none", "important");
+  if (appLayout) appLayout.style.setProperty("display", "flex", "important");
 
   window.ui.updateSidebarUserInfo(user);
   window.socketClient.connect();
@@ -41,8 +46,13 @@ function onUserAuthenticated(user) {
 }
 
 function showAuthScreen(mode = "login") {
-  document.getElementById("auth-wrapper").style.display = "flex";
-  document.getElementById("app-layout").style.display = "none";
+  document.body.classList.remove("authenticated");
+  document.body.classList.add("not-authenticated");
+
+  const authWrapper = document.getElementById("auth-wrapper");
+  const appLayout = document.getElementById("app-layout");
+  if (authWrapper) authWrapper.style.setProperty("display", "flex", "important");
+  if (appLayout) appLayout.style.setProperty("display", "none", "important");
 
   if (mode === "login") {
     document.getElementById("login-box").style.display = "block";
@@ -199,10 +209,56 @@ function setupEventListeners() {
     }
   });
 
+  // Helper: Client-side downscaling for oversized mobile camera uploads
+  function resizeImageIfLarge(file, maxW = 800, maxH = 800) {
+    return new Promise((resolve) => {
+      if (!file || !file.type.startsWith("image/") || file.size <= 1024 * 1024) {
+        return resolve(file);
+      }
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width <= maxW && height <= maxH) {
+          return resolve(file);
+        }
+        const scale = Math.min(maxW / width, maxH / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name || "avatar.jpg", { type: "image/jpeg" });
+            resolve(resizedFile);
+          } else {
+            resolve(file);
+          }
+        }, "image/jpeg", 0.85);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file);
+      };
+      img.src = url;
+    });
+  }
+
   // Avatar file upload
   document.getElementById("profile-avatar-file")?.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      window.ui.showToast("Please select a valid image file (JPG, PNG, WebP).", "error");
+      e.target.value = "";
+      return;
+    }
 
     // Preview instantly
     const reader = new FileReader();
@@ -213,13 +269,23 @@ function setupEventListeners() {
     reader.readAsDataURL(file);
 
     try {
-      window.ui.showToast("Uploading avatar...", "info");
-      const res = await window.api.uploadAvatar(file);
-      window.auth.updateCurrentUser(res.user);
-      window.ui.updateSidebarUserInfo(res.user);
-      window.ui.showToast("Avatar updated successfully!", "success");
+      window.ui.showToast("Optimizing & uploading avatar...", "info");
+      const uploadPayload = await resizeImageIfLarge(file, 800, 800);
+      const res = await window.api.uploadAvatar(uploadPayload);
+
+      if (res.user) {
+        window.auth.updateCurrentUser(res.user);
+        window.ui.updateSidebarUserInfo(res.user);
+        const preview = document.getElementById("profile-avatar-preview");
+        if (preview && res.user.avatar_url) {
+          preview.src = res.user.avatar_url;
+        }
+      }
+      window.ui.showToast("Profile picture updated successfully!", "success");
     } catch (err) {
       window.ui.showToast("Failed to upload avatar: " + err.message, "error");
+    } finally {
+      e.target.value = "";
     }
   });
 
@@ -244,18 +310,20 @@ function setupEventListeners() {
     }
   });
 
-  // Add Contact Modal submit
+  // Add Contact Request Modal submit
   document.getElementById("add-contact-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const username = document.getElementById("modal-contact-username").value.trim().replace(/^@/, '');
-    const nickname = document.getElementById("modal-contact-nickname").value.trim();
 
     try {
-      const res = await window.api.addContact(null, username, nickname);
-      window.ui.showToast(res.message || "Contact added!", "success");
+      const res = await window.api.sendContactRequest(null, username);
+      window.ui.showToast(res.message || "Contact request sent!", "success");
       window.ui.closeModals();
       e.target.reset();
       window.ui.loadContacts();
+      if (window.ui.currentView === "search") {
+        window.ui.loadSearch();
+      }
     } catch (err) {
       window.ui.showToast(err.message, "error");
     }
