@@ -352,13 +352,65 @@ class UIManager {
 
   async loadSearch(query = "") {
     const resultsContainer = document.getElementById("search-results-list");
+    const searchReqSection = document.getElementById("search-pending-requests-section");
     if (!resultsContainer) return;
 
     resultsContainer.innerHTML = `<div class="p-4 text-center text-muted"><div class="spinner-border text-pink" role="status"></div> Searching friends...</div>`;
 
     try {
-      const res = await window.api.searchUsers(query);
-      const users = res.users || [];
+      const [searchRes, reqRes] = await Promise.all([
+        window.api.searchUsers(query).catch(() => ({ users: [] })),
+        window.api.getContactRequests().catch(() => ({ incoming: [], outgoing: [] }))
+      ]);
+
+      const users = searchRes.users || [];
+      const incoming = reqRes.incoming || [];
+
+      // Update badge
+      this.updateContactRequestsBadge(incoming.length);
+
+      // Render Pending Requests Section in Find Friends if any exist
+      if (searchReqSection) {
+        if (incoming.length > 0) {
+          searchReqSection.style.display = "block";
+          searchReqSection.innerHTML = `
+            <div class="pink-card" style="border: 2px solid var(--color-primary); background: #FFF9FC;">
+              <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <h6 class="fw-bold mb-0" style="color: var(--color-deep-pink); font-size: 1.05rem;">
+                  <i class="bi bi-person-check-fill text-pink"></i> Friend Requests Waiting For Your Approval (${incoming.length})
+                </h6>
+                <span class="badge-pill-pink">${incoming.length} Pending</span>
+              </div>
+              <div class="row g-2">
+                ${incoming.map(req => `
+                  <div class="col-12 col-md-6">
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-white border">
+                      <div class="d-flex align-items-center gap-2 min-w-0">
+                        <img src="${req.sender?.avatar_url || ''}" class="avatar-img" width="42" height="42" alt="Avatar">
+                        <div class="min-w-0 text-truncate">
+                          <div class="fw-bold text-truncate" style="font-size: 0.92rem;">${this.escapeHtml(req.sender?.display_name || 'User')}</div>
+                          <div class="text-secondary small text-truncate">@${this.escapeHtml(req.sender?.username || '')}</div>
+                        </div>
+                      </div>
+                      <div class="d-flex align-items-center gap-1 ms-2 flex-shrink-0">
+                        <button class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold" onclick="window.ui.acceptContactRequest(${req.id})">
+                          <i class="bi bi-check-circle-fill"></i> Approve
+                        </button>
+                        <button class="btn btn-sm btn-pink-soft rounded-pill px-2 py-1" onclick="window.ui.declineContactRequest(${req.id})" title="Decline Request">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          searchReqSection.style.display = "none";
+          searchReqSection.innerHTML = "";
+        }
+      }
 
       if (users.length === 0) {
         resultsContainer.innerHTML = `
@@ -407,9 +459,14 @@ class UIManager {
                         <i class="bi bi-hourglass-split"></i> Requested
                       </button>
                     ` : u.has_received_request ? `
-                      <button class="btn btn-pink-primary btn-sm" onclick="window.ui.acceptContactRequest(${u.pending_request_id})">
-                        <i class="bi bi-check-lg"></i> Accept
-                      </button>
+                      <div class="d-flex align-items-center gap-1">
+                        <button class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold" onclick="window.ui.acceptContactRequest(${u.pending_request_id})">
+                          <i class="bi bi-check-circle-fill"></i> Approve
+                        </button>
+                        <button class="btn btn-sm btn-pink-soft rounded-pill px-2 py-1" onclick="window.ui.declineContactRequest(${u.pending_request_id})" title="Decline Request">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
+                      </div>
                     ` : `
                       <button class="btn btn-pink-primary btn-sm" onclick="window.ui.sendContactRequest(${u.id}, '${this.escapeHtml(u.username)}')">
                         <i class="bi bi-person-plus-fill"></i> Add Contact

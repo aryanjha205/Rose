@@ -50,13 +50,30 @@ class WebRTCManager {
 
       return this.localStream;
     } catch (err) {
-      console.error("getUserMedia error:", err);
-      // Fallback: If video failed, attempt audio only
-      if (isVideo) {
-        window.ui.showToast("Camera access failed; falling back to voice only.", "info");
-        return this.getMedia("voice");
+      console.warn("Standard getUserMedia failed, attempting relaxed constraints:", err);
+      // Fallback 1: Try relaxed constraints without resolution requirements
+      try {
+        const relaxedConstraints = isVideo
+          ? { audio: true, video: true }
+          : { audio: true };
+        this.localStream = await navigator.mediaDevices.getUserMedia(relaxedConstraints);
+        this.currentFacingMode = facingMode;
+
+        const localVideoEl = document.getElementById("local-video");
+        if (localVideoEl && isVideo) {
+          localVideoEl.srcObject = this.localStream;
+          localVideoEl.play().catch(e => console.warn("Local play error:", e));
+        }
+        return this.localStream;
+      } catch (relaxedErr) {
+        console.warn("Relaxed constraints failed:", relaxedErr);
+        // Fallback 2: If video failed, attempt audio only
+        if (isVideo) {
+          window.ui.showToast("Camera access failed; falling back to voice only.", "info");
+          return this.getMedia("voice");
+        }
+        throw relaxedErr;
       }
-      throw err;
     }
   }
 
@@ -220,9 +237,19 @@ class WebRTCManager {
 
   handleIncomingCall(data) {
     if (this.currentCall) {
-      // Busy on another call
-      window.socketClient.rejectCall(data.callId);
-      return;
+      if (this.currentCall.callId === data.callId) {
+        // Same call already ringing/processing, ignore duplicate event
+        return;
+      }
+      // If previous call was not active/connected (e.g. stale ringing or dialing state), clean it up instead of rejecting legitimate incoming call
+      if (this.currentCall.status !== "connected") {
+        console.warn("Cleaning up stale un-connected call state for new incoming call:", data.callId);
+        this.cleanupCall();
+      } else {
+        // Genuinely busy on an active connected conversation
+        window.socketClient.rejectCall(data.callId);
+        return;
+      }
     }
 
     this.currentCall = {
@@ -256,8 +283,15 @@ class WebRTCManager {
       window.socketClient.acceptCall(this.currentCall.callId);
     } catch (err) {
       console.error("Accept call error:", err);
-      window.ui.showToast("Failed to access audio/camera device", "error");
-      this.rejectIncomingCall();
+      window.ui.showToast("Failed to access audio/camera device. Please check permissions.", "error");
+      const incomingOverlay = document.getElementById("incoming-call-overlay");
+      if (incomingOverlay && incomingOverlay.classList.contains("active")) {
+        const typeText = document.getElementById("incoming-type-text");
+        if (typeText) typeText.textContent = "Mic/Cam permission needed. Please allow & tap Answer again";
+        window.soundManager.playIncomingRingtone();
+      } else {
+        this.rejectIncomingCall();
+      }
     }
   }
 

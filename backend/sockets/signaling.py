@@ -147,15 +147,24 @@ def init_signaling(app):
             # Check if caller or receiver is busy in another call
             with calls_lock:
                 if caller_id in user_active_calls:
-                    emit("call-error", {"message": "You are already in a call."})
-                    return
+                    old_call_id = user_active_calls.get(caller_id)
+                    if not old_call_id or old_call_id not in active_calls:
+                        user_active_calls.pop(caller_id, None)
+                    else:
+                        emit("call-error", {"message": "You are already in a call."})
+                        return
+
                 if to_user_id in user_active_calls:
-                    emit("user-busy", {
-                        "toUserId": to_user_id,
-                        "targetUser": target_user.to_dict(),
-                        "message": f"@{target_user.username} is busy on another call."
-                    })
-                    return
+                    old_call_id = user_active_calls.get(to_user_id)
+                    if not old_call_id or old_call_id not in active_calls:
+                        user_active_calls.pop(to_user_id, None)
+                    else:
+                        emit("user-busy", {
+                            "toUserId": to_user_id,
+                            "targetUser": target_user.to_dict(),
+                            "message": f"@{target_user.username} is busy on another call."
+                        })
+                        return
 
                 call_id = str(uuid.uuid4())
                 timer = threading.Timer(CALL_TIMEOUT_SECONDS, handle_call_timeout, args=[call_id])

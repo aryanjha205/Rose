@@ -2,7 +2,7 @@
  * Rosé Service Worker (PWA)
  * Supports Offline Shell caching, Background Web Push Calls, Ring Vibration, and Immediate Notification Actions.
  */
-const CACHE_NAME = "rose-cache-v6";
+const CACHE_NAME = "rose-cache-v7";
 const STATIC_ASSETS = [
   "/",
   "/index.html",

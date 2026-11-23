@@ -67,6 +67,10 @@ class SocketClient {
       const sender = data.request?.sender;
       window.ui.showToast(`🌸 @${sender?.username || 'A user'} sent you a contact request!`, "info");
       window.ui.loadContacts();
+      if (window.ui.currentView === "search") {
+        const query = document.getElementById("search-users-input")?.value || "";
+        window.ui.loadSearch(query);
+      }
     });
 
     this.socket.on("contact-request-accepted", (data) => {
@@ -75,7 +79,8 @@ class SocketClient {
       window.ui.showToast(`✨ @${user?.username || 'A user'} approved your contact request! You can now call each other.`, "success");
       window.ui.loadContacts();
       if (window.ui.currentView === "search") {
-        window.ui.loadSearch();
+        const query = document.getElementById("search-users-input")?.value || "";
+        window.ui.loadSearch(query);
       }
     });
 
