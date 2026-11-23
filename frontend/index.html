@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rosé - Real-Time Voice & Video Calling</title>
+  
+  <!-- Favicon & PWA Icons -->
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+
+  <!-- Progressive Web App (PWA) Manifest & Meta -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#FF4F9A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Rosé">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <!-- WebCall Stylesheets -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/call.css">
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Audio element for remote voice call stream -->
+  <audio id="remote-audio" autoplay playsinline></audio>
+
+  <!-- ========================================================================
+       AUTH WRAPPER (Login & Signup)
+       ======================================================================== -->
+  <div id="auth-wrapper" class="auth-wrapper">
+    <div class="auth-card">
+      <div class="text-center mb-4">
+        <div class="brand-badge">
+          <i class="bi bi-telephone-fill"></i> Rosé
+        </div>
+      </div>
+
+      <!-- Login Box -->
+      <div id="login-box">
+        <h2 class="auth-title">Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to your account to start calling friends and contacts.</p>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label-pink" for="login-id">Username or Email</label>
+            <input type="text" id="login-id" class="form-input-pink" placeholder="e.g. sarah or sarah@webcall.com" required autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label-pink" for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-input-pink" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" id="btn-login-submit" class="btn btn-pink-primary w-100 py-3 mt-2">
+            Sign In <i class="bi bi-arrow-right"></i>
+          </button>
+        </form>
+
+        <div class="text-center mt-4">
+          <span class="text-secondary small">Don't have an account?</span>
+          <a href="#" id="btn-go-to-signup" class="fw-bold text-decoration-none ms-1" style="color: var(--color-deep-pink);">
+            Create one free
+          </a>
+        </div>
+      </div>
+
+      <!-- Signup Box -->
+      <div id="signup-box" style="display: none;">
+        <h2 class="auth-title">Join Rosé</h2>
+        <p class="auth-subtitle">Claim your unique username and connect with voice & video worldwide.</p>
+
+        <form id="signup-form">
+          <div class="form-group">
+            <label class="form-label-pink" for="signup-username">Unique Username</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-secondary border-end-0" style="border-color: var(--border-light);">@</span>
+              <input type="text" id="signup-username" class="form-input-pink border-start-0" placeholder="sarah_connor" required pattern="^[a-zA-Z0-9_]{3,30}$" title="3-30 letters, numbers, or underscores">
+            </div>
+            <div class="small text-muted mt-1">Other users will search this username to call you.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label-pink" for="signup-displayname">Display Name</label>
+            <input type="text" id="signup-displayname" class="form-input-pink" placeholder="Sarah Connor" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label-pink" for="signup-email">Email Address</label>
+            <input type="email" id="signup-email" class="form-input-pink" placeholder="sarah@example.com" required autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label-pink" for="signup-password">Password (min 6 characters)</label>
+            <input type="password" id="signup-password" class="form-input-pink" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+          </div>
+
+          <button type="submit" id="btn-signup-submit" class="btn btn-pink-primary w-100 py-3 mt-2">
+            Create Account <i class="bi bi-sparkles"></i>
+          </button>
+        </form>
+
+        <div class="text-center mt-4">
+          <span class="text-secondary small">Already have an account?</span>
+          <a href="#" id="btn-go-to-login" class="fw-bold text-decoration-none ms-1" style="color: var(--color-deep-pink);">
+            Sign in
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       AUTHENTICATED APPLICATION LAYOUT
+       ======================================================================== -->
+  <div id="app-layout" class="app-layout" style="display: none;">
+    <!-- Desktop Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo-icon">
+          <i class="bi bi-telephone-fill"></i>
+        </div>
+        <div class="brand-name">Rosé</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item-btn active" data-view="dashboard">
+          <i class="bi bi-grid-fill"></i>
+          <span>Dashboard</span>
+        </button>
+
+        <button class="nav-item-btn" data-view="contacts">
+          <i class="bi bi-people-fill"></i>
+          <span>Contacts</span>
+        </button>
+
+        <button class="nav-item-btn" data-view="search">
+          <i class="bi bi-search"></i>
+          <span>Find Users</span>
+        </button>
+
+        <button class="nav-item-btn" data-view="history">
+          <i class="bi bi-clock-history"></i>
+          <span>Call History</span>
+        </button>
+
+        <button class="nav-item-btn" data-view="missed">
+          <i class="bi bi-telephone-x-fill"></i>
+          <span>Missed Calls</span>
+          <span id="missed-count-badge" class="nav-badge" style="display: none;">0</span>
+        </button>
+
+        <button class="nav-item-btn" data-view="profile">
+          <i class="bi bi-person-circle"></i>
+          <span>Profile</span>
+        </button>
+
+        <button class="nav-item-btn" data-view="settings">
+          <i class="bi bi-gear-fill"></i>
+          <span>Settings</span>
+        </button>
+
+        <!-- PWA Install Button (Shown when browser supports installation) -->
+        <div id="pwa-install-container" class="mt-3" style="display: none;">
+          <button id="btn-pwa-install" class="btn btn-pink-soft w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-bold" style="font-size: 0.85rem;">
+            <i class="bi bi-download"></i> Install App
+          </button>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="avatar-container">
+          <img src="" class="sidebar-user-avatar current-user-avatar" alt="Avatar">
+          <span class="status-indicator status-online"></span>
+        </div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name current-user-displayname">User</div>
+          <div class="sidebar-user-handle current-user-handle">@username</div>
+        </div>
+        <button class="btn btn-link text-secondary p-1 btn-logout" title="Sign Out">
+          <i class="bi bi-box-arrow-right fs-5"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header w-100">
+      <div class="d-flex align-items-center gap-2">
+        <div class="brand-logo-icon" style="width: 34px; height: 34px; font-size: 1.1rem;">
+          <i class="bi bi-telephone-fill"></i>
+        </div>
+        <div class="brand-name" style="font-size: 1.2rem;">Rosé</div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button id="btn-mobile-pwa-install" class="btn btn-pink-soft btn-sm py-1 px-2 fw-bold" style="display: none; font-size: 0.8rem;">
+          <i class="bi bi-download"></i> Install
+        </button>
+        <img src="" class="avatar-img current-user-avatar" width="36" height="36" alt="Avatar">
+        <button class="btn btn-link text-secondary p-1 btn-logout">
+          <i class="bi bi-box-arrow-right fs-5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- VIEW: DASHBOARD -->
+      <section id="view-dashboard" class="app-view active">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Welcome back to your Rosé communications hub.</p>
+          </div>
+          <div>
+            <button class="btn btn-pink-primary" onclick="window.ui.openAddContactModal()">
+              <i class="bi bi-person-plus-fill"></i> Add Contact
+            </button>
+          </div>
+        </div>
+        <div id="dashboard-content">
+          <!-- Dynamic dashboard content populated by ui.js -->
+        </div>
+      </section>
+
+      <!-- VIEW: CONTACTS -->
+      <section id="view-contacts" class="app-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Contacts</h1>
+            <p class="page-subtitle">Manage your saved contacts and start quick calls.</p>
+          </div>
+          <div>
+            <button class="btn btn-pink-primary" onclick="window.ui.openAddContactModal()">
+              <i class="bi bi-person-plus-fill"></i> Add Contact
+            </button>
+          </div>
+        </div>
+        <div id="contacts-list">
+          <!-- Dynamic contacts rendered by ui.js -->
+        </div>
+      </section>
+
+      <!-- VIEW: FIND USERS -->
+      <section id="view-search" class="app-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Find Users</h1>
+            <p class="page-subtitle">Search registered users by username or display name to call or connect.</p>
+          </div>
+        </div>
+        <div class="pink-card mb-4">
+          <div class="search-input-wrapper">
+            <i class="bi bi-search"></i>
+            <input type="text" id="search-users-input" class="form-input-pink" placeholder="Type a username or name (e.g. alex, sarah)...">
+          </div>
+        </div>
+        <div id="search-results-list">
+          <!-- Dynamic search results -->
+        </div>
+      </section>
+
+      <!-- VIEW: CALL HISTORY -->
+      <section id="view-history" class="app-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Call History</h1>
+            <p class="page-subtitle">View all your incoming, outgoing, and completed calls.</p>
+          </div>
+        </div>
+        <div id="all-calls-list">
+          <!-- Call history logs -->
+        </div>
+      </section>
+
+      <!-- VIEW: MISSED CALLS -->
+      <section id="view-missed" class="app-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Missed Calls</h1>
+            <p class="page-subtitle">Calls you missed with one-click redial.</p>
+          </div>
+        </div>
+        <div id="missed-calls-list">
+          <!-- Missed calls logs -->
+        </div>
+      </section>
+
+      <!-- VIEW: PROFILE -->
+      <section id="view-profile" class="app-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Your Profile</h1>
+            <p class="page-subtitle">Manage your profile avatar, display name, and security settings.</p>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12 col-lg-6">
+            <div class="pink-card">
+              <h5 class="fw-bold mb-3">Profile Details</h5>
+              <div class="d-flex align-items-center gap-3 mb-4">
+                <img id="profile-avatar-preview" src="" class="avatar-img" width="80" height="80" alt="Avatar Preview">
+                <div>
+                  <label class="btn btn-pink-soft btn-sm" for="profile-avatar-file">
+                    <i class="bi bi-camera"></i> Change Avatar
+                  </label>
+                  <input type="file" id="profile-avatar-file" accept="image/*" style="display: none;">
+                  <div class="small text-muted mt-1">Upload JPG, PNG or WebP image.</div>
+                </div>
+              </div>
+
+              <form id="profile-form">
+                <div class="form-group">
+                  <label class="form-label-pink">Unique Username</label>
+                  <input type="text" id="profile-username-input" class="form-input-pink bg-light" readonly disabled>
+                  <div class="small text-muted mt-1">Usernames are permanent and unique.</div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label-pink">Email Address</label>
+                  <input type="email" id="profile-email-input" class="form-input-pink bg-light" readonly disabled>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label-pink" for="profile-displayname-input">Display Name</label>
+                  <input type="text" id="profile-displayname-input" class="form-input-pink" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label-pink" for="profile-bio-input">About / Status</label>
+                  <textarea id="profile-bio-input" class="form-input-pink" rows="3" maxlength="200"></textarea>
+                </div>
+
+                <button type="submit" id="btn-save-profile" class="btn btn-pink-primary">
+                  Save Changes
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="pink-card">
+              <h5 class="fw-bold mb-3">Change Password</h5>
+              <form id="change-password-form">
+                <div class="form-group">
+                  <label class="form-label-pink" for="current-password-input">Current Password</label>
+                  <input type="password" id="current-password-input" class="form-input-pink" required autocomplete="current-password">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label-pink" for="new-password-input">New Password</label>
+                  <input type="password" id="new-password-input" class="form-input-pink" minlength="6" required autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label-pink" for="confirm-password-input">Confirm New Password</label>
+                  <input type="password" id="confirm-password-input" class="form-input-pink" minlength="6" required autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="btn btn-pink-soft">
+                  Update Password
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: SETTINGS -->
+      <section id="view-settings" class="app-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Calling Settings</h1>
+            <p class="page-subtitle">Configure audio devices, camera permissions, and call sound preferences.</p>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12 col-lg-6">
+            <div class="pink-card">
+              <h5 class="fw-bold mb-3"><i class="bi bi-mic-fill text-pink"></i> Audio & Microphone</h5>
+              <div class="form-group">
+                <label class="form-label-pink" for="settings-mic-select">Microphone Device</label>
+                <select id="settings-mic-select" class="form-input-pink"></select>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between p-3 rounded bg-light mb-3">
+                <div>
+                  <div class="fw-bold small">Incoming Ringtone</div>
+                  <div class="text-secondary small">Web Audio API melodic synthesizer</div>
+                </div>
+                <button id="btn-test-ringtone" class="btn btn-pink-soft btn-sm" data-playing="false">
+                  <i class="bi bi-play-fill"></i> Test Ringtone
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="pink-card">
+              <h5 class="fw-bold mb-3"><i class="bi bi-camera-video-fill text-pink"></i> Camera & Video</h5>
+              <div class="form-group">
+                <label class="form-label-pink" for="settings-cam-select">Camera Device</label>
+                <select id="settings-cam-select" class="form-input-pink"></select>
+              </div>
+
+              <div class="p-3 rounded bg-light">
+                <div class="fw-bold small mb-1">WebRTC STUN / ICE Configuration</div>
+                <div class="text-secondary small">Connected to Google STUN servers with NAT traversal enabled.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav">
+      <button class="mobile-nav-btn active" data-view="dashboard">
+        <i class="bi bi-grid-fill"></i>
+        <span>Home</span>
+      </button>
+
+      <button class="mobile-nav-btn" data-view="contacts">
+        <i class="bi bi-people-fill"></i>
+        <span>Contacts</span>
+      </button>
+
+      <button class="mobile-nav-btn" data-view="search">
+        <i class="bi bi-search"></i>
+        <span>Search</span>
+      </button>
+
+      <button class="mobile-nav-btn" data-view="history">
+        <i class="bi bi-clock-history"></i>
+        <span>Calls</span>
+      </button>
+
+      <button class="mobile-nav-btn" data-view="profile">
+        <i class="bi bi-person-circle"></i>
+        <span>Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: ADD CONTACT
+       ======================================================================== -->
+  <div id="add-contact-modal" class="modal-overlay">
+    <div class="modal-dialog-pink">
+      <div class="modal-header-pink">
+        <h5 class="fw-bold mb-0">Add New Contact</h5>
+        <button class="btn btn-link text-secondary p-0 btn-close-modal">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <form id="add-contact-form">
+        <div class="modal-body-pink">
+          <div class="form-group">
+            <label class="form-label-pink" for="modal-contact-username">User's @Username</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-secondary border-end-0" style="border-color: var(--border-light);">@</span>
+              <input type="text" id="modal-contact-username" class="form-input-pink border-start-0" placeholder="username" required>
+            </div>
+            <div class="small text-muted mt-1">Enter the exact username of the person you wish to add.</div>
+          </div>
+
+          <div class="form-group mb-0">
+            <label class="form-label-pink" for="modal-contact-nickname">Nickname (Optional)</label>
+            <input type="text" id="modal-contact-nickname" class="form-input-pink" placeholder="e.g. Bestie, Work, Mom">
+          </div>
+        </div>
+        <div class="modal-footer-pink">
+          <button type="button" class="btn btn-pink-soft btn-close-modal">Cancel</button>
+          <button type="submit" class="btn btn-pink-primary">Add Contact</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       OVERLAY: INCOMING CALL SCREEN
+       ======================================================================== -->
+  <div id="incoming-call-overlay" class="call-overlay">
+    <div class="incoming-call-container">
+      <!-- Animated Ripples -->
+      <div class="ripple-circle"></div>
+      <div class="ripple-circle"></div>
+      <div class="ripple-circle"></div>
+
+      <img id="incoming-avatar" src="" class="caller-avatar-ring" alt="Caller">
+      <h2 id="incoming-name" class="caller-name-title">Caller Name</h2>
+      <div id="incoming-handle" class="caller-username-subtitle">@username</div>
+      <div id="incoming-type-text" class="call-type-badge-large">Incoming Call...</div>
+
+      <div class="call-actions-row">
+        <button id="btn-reject-incoming" class="call-action-btn btn-reject-call" title="Decline Call">
+          <i class="bi bi-telephone-x-fill"></i>
+        </button>
+        <button id="btn-accept-incoming" class="call-action-btn btn-accept-call" title="Accept Call">
+          <i class="bi bi-telephone-fill"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       OVERLAY: OUTGOING CALL SCREEN (DIALING)
+       ======================================================================== -->
+  <div id="outgoing-call-overlay" class="call-overlay">
+    <div class="incoming-call-container">
+      <div class="ripple-circle"></div>
+      <div class="ripple-circle"></div>
+
+      <img id="outgoing-avatar" src="" class="caller-avatar-ring" alt="Receiver">
+      <h2 id="outgoing-name" class="caller-name-title">Receiver Name</h2>
+      <div id="outgoing-handle" class="caller-username-subtitle">@username</div>
+      <div id="outgoing-type-text" class="call-type-badge-large">Calling...</div>
+
+      <div class="call-actions-row">
+        <button id="btn-cancel-outgoing" class="call-action-btn btn-reject-call" title="Cancel Call">
+          <i class="bi bi-telephone-x-fill"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       OVERLAY: ACTIVE VOICE CALL SCREEN
+       ======================================================================== -->
+  <div id="active-voice-overlay" class="call-overlay">
+    <div class="voice-call-container">
+      <div class="voice-header">
+        <div class="brand-badge mb-3">
+          <i class="bi bi-telephone-fill"></i> Voice Call
+        </div>
+        <div class="avatar-container mb-3">
+          <img id="voice-peer-avatar" src="" class="caller-avatar-ring" style="width: 130px; height: 130px;" alt="Peer">
+        </div>
+        <h3 id="voice-peer-name" class="fw-bold mb-1">Peer Name</h3>
+        <div id="voice-peer-handle" class="text-secondary small mb-2">@username</div>
+        <div id="voice-call-timer" class="voice-call-timer">00:00</div>
+      </div>
+
+      <!-- Real-Time Waveform Visualizer Canvas -->
+      <div class="waveform-canvas-wrapper">
+        <canvas id="voice-waveform-canvas" width="480" height="120"></canvas>
+      </div>
+
+      <!-- Voice Call Controls -->
+      <div class="call-controls-bar">
+        <button class="control-btn btn-toggle-mic" title="Mute/Unmute Mic">
+          <i class="bi bi-mic-fill"></i>
+        </button>
+        <button class="control-btn btn-end-call" title="End Call">
+          <i class="bi bi-telephone-x-fill"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       OVERLAY: ACTIVE VIDEO CALL SCREEN
+       ======================================================================== -->
+  <div id="active-video-overlay" class="call-overlay">
+    <div class="video-call-container">
+      <!-- Remote Video Display -->
+      <div class="remote-video-wrapper">
+        <video id="remote-video" autoplay playsinline></video>
+        <!-- Fallback avatar when remote camera disabled -->
+        <div id="remote-video-placeholder" class="remote-video-placeholder">
+          <i class="bi bi-camera-video-off display-3 text-muted mb-3"></i>
+          <h5>Camera Turned Off</h5>
+        </div>
+      </div>
+
+      <!-- Local Camera Preview (Picture-in-Picture) -->
+      <div class="local-pip-wrapper">
+        <video id="local-video" autoplay playsinline muted></video>
+        <div class="pip-controls">
+          <button class="pip-btn btn-flip-cam" title="Flip Camera">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Overlay Bar -->
+      <div class="video-top-bar">
+        <div class="video-peer-info">
+          <img id="video-peer-avatar" src="" class="video-peer-avatar" alt="Peer">
+          <div class="video-peer-text">
+            <div id="video-peer-name" class="video-peer-name">Peer Name</div>
+            <div id="video-call-timer" class="video-call-duration">00:00</div>
+          </div>
+        </div>
+
+        <button class="btn btn-dark btn-sm rounded-pill px-3 btn-fullscreen" title="Toggle Fullscreen">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </button>
+      </div>
+
+      <!-- Bottom Floating Controls Bar -->
+      <div class="video-bottom-controls">
+        <div class="call-controls-bar">
+          <button class="control-btn btn-toggle-mic" title="Toggle Microphone">
+            <i class="bi bi-mic-fill"></i>
+          </button>
+
+          <button class="control-btn btn-toggle-cam" title="Toggle Camera">
+            <i class="bi bi-camera-video-fill"></i>
+          </button>
+
+          <button class="control-btn btn-flip-cam" title="Flip Camera">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+
+          <button class="control-btn btn-end-call" title="End Call">
+            <i class="bi bi-telephone-x-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CDN Dependencies -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- WebCall JS Modules -->
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/audio.js"></script>
+  <script src="/js/socket.js"></script>
+  <script src="/js/webrtc.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

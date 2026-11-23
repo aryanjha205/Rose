@@ -1,0 +1,61 @@
+/* ==========================================================================
+   WebCall Design System - Pink + White Theme Tokens
+   ========================================================================== */
+
+:root {
+  /* Brand Pink Palette */
+  --color-primary: #FF4F9A;
+  --color-primary-hover: #f03a89;
+  --color-primary-active: #de2777;
+  --color-deep-pink: #F72585;
+  --color-soft-pink: #FFE4EF;
+  --color-light-pink: #FFF1F6;
+  --color-bg: #FFF9FC;
+  --color-surface: #FFFFFF;
+  --color-surface-translucent: rgba(255, 255, 255, 0.85);
+  
+  /* Text & Typography */
+  --color-text-main: #29212A;
+  --color-text-secondary: #8A7D88;
+  --color-text-muted: #B4A9B2;
+  --color-text-light: #FFFFFF;
+  
+  /* Status Colors */
+  --color-online: #10B981;
+  --color-online-glow: rgba(16, 185, 129, 0.35);
+  --color-offline: #8A7D88;
+  --color-danger: #EF4444;
+  --color-danger-hover: #DC2626;
+  --color-danger-glow: rgba(239, 68, 68, 0.35);
+  --color-warning: #F59E0B;
+  
+  /* Borders & Dividers */
+  --border-light: #F8D7E6;
+  --border-subtle: #FDF0F6;
+  --border-card: #F4D3E3;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #FF4F9A 0%, #F72585 100%);
+  --gradient-soft: linear-gradient(135deg, #FFF1F6 0%, #FFE4EF 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 241, 246, 0.6) 100%);
+  --gradient-dark-overlay: linear-gradient(180deg, rgba(41, 33, 42, 0.1) 0%, rgba(41, 33, 42, 0.85) 100%);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(247, 37, 133, 0.06);
+  --shadow-md: 0 8px 24px rgba(247, 37, 133, 0.10);
+  --shadow-lg: 0 16px 40px rgba(247, 37, 133, 0.16);
+  --shadow-pink-glow: 0 0 25px rgba(255, 79, 154, 0.45);
+  --shadow-card: 0 10px 30px -5px rgba(247, 37, 133, 0.08);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}

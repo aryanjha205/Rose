@@ -1,0 +1,42 @@
+services:
+  # ============================================================================
+  # Rosé Flask-SocketIO Signaling & API Web Service
+  # ============================================================================
+  - type: web
+    name: rose-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt && flask db upgrade"
+    startCommand: "gunicorn --worker-class simple_websocket.gunicorn.GunicornWebsocketWorker -w 1 --bind 0.0.0.0:$PORT run:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: FLASK_DEBUG
+        value: "false"
+
+  # ============================================================================
+  # Rosé Static Site Frontend (Render Static Site)
+  # ============================================================================
+  - type: static
+    name: rose-frontend
+    buildCommand: "echo 'Frontend ready for static deployment'"
+    staticPublishPath: "./frontend"
+    envVars:
+      - key: WEBCALL_BACKEND_URL
+        # Set to the backend Web Service URL, e.g. https://rose-backend.onrender.com
+        sync: false
