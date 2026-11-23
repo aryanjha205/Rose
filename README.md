@@ -232,7 +232,7 @@ To verify real-time voice, video, signaling, and presence:
 Because WebCall's Flask backend automatically serves the frontend static SPA at the root URL, you can deploy the complete platform in a single Render Web Service:
 1. Create a new **Web Service** on Render connected to this repository.
 2. Build Command: `pip install -r requirements.txt && flask db upgrade`
-3. Start Command: `gunicorn --worker-class simple_websocket.gunicorn.GunicornWebsocketWorker -w 1 --bind 0.0.0.0:$PORT run:app`
+3. Start Command: `python run.py` (or `gunicorn --worker-class gthread -w 1 --threads 100 --bind 0.0.0.0:$PORT run:app`)
 4. Add Environment Variables:
    - `DATABASE_URL`: Your Neon PostgreSQL connection string.
    - `SECRET_KEY`: Random 32+ character string.

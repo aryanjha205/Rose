@@ -8,7 +8,7 @@ services:
     region: oregon
     plan: free
     buildCommand: "pip install -r requirements.txt && flask db upgrade"
-    startCommand: "gunicorn --worker-class simple_websocket.gunicorn.GunicornWebsocketWorker -w 1 --bind 0.0.0.0:$PORT run:app"
+    startCommand: "python run.py"
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
